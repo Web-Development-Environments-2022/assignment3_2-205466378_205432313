@@ -9,7 +9,7 @@ const recipe_utils = require("./utils/recipes_utils");
  */
 router.use(async function (req, res, next) {
   if (req.session && req.session.user_id) {
-    DButils.execQuery("SELECT username FROM users").then((users) => {
+    DButils.execQuery("SELECT user_id FROM users").then((users) => {
       if (users.find((x) => x.user_id === req.session.user_id)) {
         req.user_id = req.session.user_id;
         next();
@@ -82,7 +82,7 @@ router.post('/CreateReceipes', async (req,res,next) => {
       '${req.body.image}', '${popularity}', '${req.body.vegan}', '${req.body.vegetarian}', '${recipe_details.glutenFree}',
       '${req.body.Ingredients}', '${req.body.instructions}','${req.body.DishesNumber}'')`
     );
-    res.status(201).send({ message: "recipe created", success: true });
+    res.send({ message: "recipe created", success: true });
   } catch (error) {
     next(error);
   }
@@ -104,11 +104,13 @@ router.post('/addLike', async (req,res,next) => {
   try{
     let user_id = req.session.user_id;
     await DButils.execQuery(
-      `INSERT INTO cakes_db.likes VALUES ('${user_id}', '${req.body.recipe_id}'')`
+      `INSERT INTO cakes_db.likes (user_id, recipe_id) VALUES (${user_id}, ${req.body.recipe_id})`
     );
+    
     await DButils.execQuery(
       `UPDATE cakes_db.recipes
-      SET popularity = popularity+1 WHERE id='${req.body.recipe_id}';')`
+      SET popularity = (popularity+1)
+      WHERE id= ${req.body.recipe_id}`
     );
     res.status(200).send("Like added to the system");
   } catch(error){
@@ -120,20 +122,19 @@ router.post('/addLike', async (req,res,next) => {
 router.get('/getMyLikes', async (req,res,next) => {
   try{
     let user_id = req.session.user_id;
-    const num_row=await DButils.execQuery(` select count(recipe_id) from like where user_id='${user_id}'`);
+    const num_row=await DButils.execQuery(` select count(recipe_id) from likes where user_id='${user_id}'`);
     if(num_row==0){
+  
       res.status(200).send("You don't really like anything");
     }
     else{
       let Mylikes = await DButils.execQuery(
-        `select distinct recipe_id from like where user_id='${user_id}`
+        `select distinct recipe_id from likes where user_id=${user_id}`
       );
-
-      let info = recipe_utils.getRecipeInformation()
       id_array = [];
-      info.map((element) => id_array.push(element.recipe_id));
+      Mylikes.map((element) => id_array.push(element.recipe_id));
       const results = await recipe_utils.getRecipesPreview(id_array);
-      res.status(200).send(results.data);
+      res.status(200).send(results);
     }
     
     

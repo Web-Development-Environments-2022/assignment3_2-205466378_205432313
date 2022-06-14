@@ -12,12 +12,13 @@ const api_domain = "https://api.spoonacular.com/recipes";
 
 
 async function getRecipeInformation(recipe_id) {
-    return await axios.get(`${api_domain}/${recipe_id}/information`, {
+    let res = await axios.get(`${api_domain}/${recipe_id}/information`, {
         params: {
             includeNutrition: false,
             apiKey: process.env.spooncular_apiKey
         }
     });
+    return res;
 }
 
 async function getRandomReceipe(numOfRecipe){
@@ -152,3 +153,4 @@ exports.getRecipeByTitle = getRecipeByTitle;
 exports.IFUserEXIST = IFUserEXIST;
 exports.search = search;
 exports.getRecipesPreview =getRecipesPreview;
+exports.getRecipeInformation = getRecipeInformation;
