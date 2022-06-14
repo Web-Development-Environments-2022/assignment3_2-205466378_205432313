@@ -20,19 +20,22 @@ router.post("/Register", async (req, res, next) => {
     }
     let users = [];
     users = await DButils.execQuery("SELECT username from users");
-
     if (users.find((x) => x.username === user_details.username))
       throw { status: 409, message: "Username taken" };
-
+    // console.log("good username");
     // add the new username
     let hash_password = bcrypt.hashSync(
       user_details.password,
       parseInt(process.env.bcrypt_saltRounds)
     );
     await DButils.execQuery(
-      `INSERT INTO users VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
-      '${user_details.country}', '${hash_password}', '${user_details.email}')`
+      `INSERT INTO users(username, firstname, lastname, country, password, email,profilePic) VALUES ('${user_details.username}', '${user_details.firstname}', '${user_details.lastname}',
+      '${user_details.country}', '${hash_password}', '${user_details.email}','${user_details.profilePic}')`
     );
+    var num=0;
+    await DButils.execQuery(
+      `INSERT INTO cakes_db.LastWatched (username, recipe_id1, recipe_id2, recipe_id3)
+      VALUES (${user_details.username}, ${num}, ${num}, ${num});`);
     res.status(201).send({ message: "user created", success: true });
   } catch (error) {
     next(error);
@@ -52,14 +55,15 @@ router.post("/Login", async (req, res, next) => {
         `SELECT * FROM users WHERE username = '${req.body.username}'`
       )
     )[0];
-
+    console.log(user.password);
+    console.log(req.body.password);
     if (!bcrypt.compareSync(req.body.password, user.password)) {
       throw { status: 401, message: "Username or Password incorrect" };
     }
 
     // Set cookie
     req.session.user_id = user.user_id;
-
+    req.session.username = user.username;
 
     // return cookie
     res.status(200).send({ message: "login succeeded", success: true });
